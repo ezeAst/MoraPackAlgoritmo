@@ -121,7 +121,7 @@ public class MainPrueba {
 
         vuelos.add(new Vuelo(paris, madrid,
                 LocalDateTime.of(2025, 1, 1, 13, 0),
-                LocalDateTime.of(2025, 1, 2, 15, 0),
+                LocalDateTime.of(2025, 1, 1, 15, 0),
                 100));
 
         return vuelos;

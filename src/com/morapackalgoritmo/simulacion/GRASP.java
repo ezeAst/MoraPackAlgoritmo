@@ -1,10 +1,7 @@
 package com.morapackalgoritmo.simulacion;
 
-import com.morapackalgoritmo.models.Aeropuerto;
-import com.morapackalgoritmo.models.Pedido;
-import com.morapackalgoritmo.models.Ruta;
+import com.morapackalgoritmo.models.*;
 import com.morapackalgoritmo.simulacion.Solucion;
-import com.morapackalgoritmo.models.Vuelo;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -414,6 +411,7 @@ public class GRASP {
 
     /**
      * Asigna productos de un pedido usando las opciones de la RCL aleatoriamente
+     * Valida y actualiza capacidades de almacenes
      * @param pedido Pedido a asignar
      * @param rcl Lista de candidatos restringida
      * @return Lista de rutas creadas
@@ -434,30 +432,44 @@ public class GRASP {
             OpcionSede opcion = rclDisponible.get(indice);
             rclDisponible.remove(indice); // Remover para no repetir
 
-            // Calcular cuántos productos caben en esta ruta
-            int capacidadDisponibleRuta = Integer.MAX_VALUE;
+            // Calcular cuántos productos caben en esta ruta (considerando VUELOS)
+            int capacidadDisponibleVuelos = Integer.MAX_VALUE;
             for (Vuelo vuelo : opcion.ruta) {
                 int capacidadDisponible = vuelo.getCapacidadMaxima() - vuelo.getCapacidadActual();
-                capacidadDisponibleRuta = Math.min(capacidadDisponibleRuta, capacidadDisponible);
+                capacidadDisponibleVuelos = Math.min(capacidadDisponibleVuelos, capacidadDisponible);
             }
 
-            // Si esta ruta no tiene capacidad, continuar con otra
-            if (capacidadDisponibleRuta <= 0) {
-                continue;
+            if (capacidadDisponibleVuelos <= 0) {
+                continue; // No hay capacidad en vuelos
             }
+
+            // Validar capacidades de ALMACENES en toda la ruta
+            int capacidadDisponibleAlmacenes = validarCapacidadAlmacenesEnRuta(opcion.ruta);
+
+            if (capacidadDisponibleAlmacenes <= 0) {
+                System.out.println("ADVERTENCIA: No hay capacidad en almacenes para ruta del pedido " +
+                        pedido.getIdCliente());
+                continue; // No hay capacidad en almacenes
+            }
+
+            // Capacidad real disponible es el mínimo entre vuelos y almacenes
+            int capacidadDisponibleRuta = Math.min(capacidadDisponibleVuelos, capacidadDisponibleAlmacenes);
 
             // Asignar lo que cabe
             int cantidadAsignada = Math.min(cantidadPendiente, capacidadDisponibleRuta);
 
-            // Cargar productos en los vuelos
+            // Crear objeto Ruta primero (lo necesitamos para ProductoEnAlmacen)
+            Ruta nuevaRuta = new Ruta(pedido, opcion.sede, opcion.ruta, cantidadAsignada);
+
+            // Actualizar VUELOS
             for (Vuelo vuelo : opcion.ruta) {
                 vuelo.cargarProductos(cantidadAsignada);
             }
 
-            // Crear objeto Ruta
-            Ruta nuevaRuta = new Ruta(pedido, opcion.sede, opcion.ruta, cantidadAsignada);
-            rutasCreadas.add(nuevaRuta);
+            // Actualizar ALMACENES
+            actualizarAlmacenesEnRuta(nuevaRuta, opcion.ruta, cantidadAsignada);
 
+            rutasCreadas.add(nuevaRuta);
             cantidadPendiente -= cantidadAsignada;
         }
 
@@ -500,6 +512,72 @@ public class GRASP {
         long plazoMaximoHoras = plazoMaximoDias * 24;
 
         return horasTranscurridas <= plazoMaximoHoras;
+    }
+
+    /**
+     * Valida que todos los almacenes en la ruta tengan capacidad
+     * @param ruta Lista de vuelos
+     * @return Capacidad mínima disponible en los almacenes, o 0 si alguno está lleno
+     */
+    private int validarCapacidadAlmacenesEnRuta(List<Vuelo> ruta) {
+        if (ruta.isEmpty()) {
+            return 0;
+        }
+
+        int capacidadMinima = Integer.MAX_VALUE;
+
+        // Validar cada aeropuerto de llegada en la ruta
+        for (int i = 0; i < ruta.size(); i++) {
+            Vuelo vuelo = ruta.get(i);
+            Aeropuerto aeropuertoLlegada = vuelo.getAeropuertoDestino();
+            LocalDateTime horaLlegada = vuelo.getHoraLlegada();
+
+            // Limpiar productos expirados antes de validar
+            aeropuertoLlegada.limpiarProductosExpirados(horaLlegada);
+
+            // Calcular capacidad disponible
+            int capacidadDisponible = aeropuertoLlegada.getCapacidad() -
+                    aeropuertoLlegada.getCapacidadActual();
+
+            capacidadMinima = Math.min(capacidadMinima, capacidadDisponible);
+
+            if (capacidadDisponible <= 0) {
+                return 0; // Almacén lleno
+            }
+        }
+
+        return capacidadMinima;
+    }
+
+    /**
+     * Actualiza los almacenes agregando los productos de la ruta
+     * @param ruta Ruta creada
+     * @param vuelos Lista de vuelos de la ruta
+     * @param cantidad Cantidad de productos
+     */
+    private void actualizarAlmacenesEnRuta(Ruta ruta, List<Vuelo> vuelos, int cantidad) {
+        for (int i = 0; i < vuelos.size(); i++) {
+            Vuelo vueloActual = vuelos.get(i);
+            Aeropuerto aeropuertoLlegada = vueloActual.getAeropuertoDestino();
+            LocalDateTime horaLlegada = vueloActual.getHoraLlegada();
+
+            // Determinar si es destino final o tránsito
+            Vuelo siguienteVuelo = null;
+            if (i < vuelos.size() - 1) {
+                siguienteVuelo = vuelos.get(i + 1); // Hay siguiente vuelo (es tránsito)
+            }
+
+            // Crear producto en almacén
+            ProductoEnAlmacen producto = new ProductoEnAlmacen(ruta, cantidad, horaLlegada, siguienteVuelo);
+
+            // Agregar al almacén
+            boolean agregado = aeropuertoLlegada.agregarProductoAlAlmacen(producto, horaLlegada);
+
+            if (!agregado) {
+                System.out.println("ERROR: No se pudo agregar producto al almacén " +
+                        aeropuertoLlegada.getCodigo() + " (no debería pasar si validamos bien)");
+            }
+        }
     }
 
 }

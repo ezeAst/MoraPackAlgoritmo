@@ -1,5 +1,11 @@
 package com.morapackalgoritmo.models;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 public class Aeropuerto {
 
     // === Atributos ===
@@ -10,9 +16,11 @@ public class Aeropuerto {
     private int capacidadActual;    // Capacidad actual del almacén
     private int husoHorario;        // Ej: -5
     private String continente;      // Ej: "América"
+    private List<ProductoEnAlmacen> productosActuales;
 
     // === Constructores ===
     public Aeropuerto() {
+        this.productosActuales = new ArrayList<>();
     }
 
     public Aeropuerto(String codigo, String nombre, String pais, int capacidad, int husoHorario, String continente) {
@@ -23,6 +31,7 @@ public class Aeropuerto {
         this.capacidadActual = 0; // por defecto empieza vacío
         this.husoHorario = husoHorario;
         this.continente = continente;
+        this.productosActuales = new ArrayList<>();
     }
 
     // === Getters y Setters ===
@@ -82,6 +91,10 @@ public class Aeropuerto {
         this.continente = continente;
     }
 
+    public List<ProductoEnAlmacen> getProductosActuales() {
+        return productosActuales;
+    }
+
     // === Métodos funcionales ===
     public boolean agregarCarga(int cantidad) {
         if (capacidadActual + cantidad <= capacidad) {
@@ -117,4 +130,62 @@ public class Aeropuerto {
                 ", continente='" + continente + '\'' +
                 '}';
     }
+
+    /**
+     * Limpia productos expirados del almacén
+     * @param momentoReferencia Momento actual para evaluar expiración
+     */
+    public void limpiarProductosExpirados(LocalDateTime momentoReferencia) {
+        Iterator<ProductoEnAlmacen> iterator = productosActuales.iterator();
+
+        while (iterator.hasNext()) {
+            ProductoEnAlmacen producto = iterator.next();
+            boolean debeEliminar = false;
+
+            if (producto.esDestinoFinal()) {
+                // Almacén de destino: eliminar si pasaron más de 2 horas
+                Duration tiempoEnAlmacen = Duration.between(producto.getHoraLlegada(), momentoReferencia);
+                if (tiempoEnAlmacen.toHours() >= 2) {
+                    debeEliminar = true;
+                }
+            } else {
+                // Almacén de tránsito: eliminar si el siguiente vuelo ya salió
+                if (producto.getSiguienteVuelo().getHoraSalida().isBefore(momentoReferencia)) {
+                    debeEliminar = true;
+                }
+            }
+
+            if (debeEliminar) {
+                capacidadActual -= producto.getCantidad();
+                iterator.remove();
+            }
+        }
+    }
+
+    /**
+     * Intenta agregar productos al almacén
+     * @param producto Producto a agregar
+     * @param momentoReferencia Momento de llegada
+     * @return true si se pudo agregar, false si no hay espacio
+     */
+    public boolean agregarProductoAlAlmacen(ProductoEnAlmacen producto, LocalDateTime momentoReferencia) {
+        // Primero limpiar productos expirados
+        limpiarProductosExpirados(momentoReferencia);
+
+        // Verificar si hay espacio
+        if (capacidadActual + producto.getCantidad() <= capacidad) {
+            productosActuales.add(producto);
+            capacidadActual += producto.getCantidad();
+            return true;
+        }
+
+        return false; // No hay espacio
+    }
+
+    /**
+     * Calcula la capacidad disponible actual (después de limpiar expirados)
+     * @param momentoReferencia Momento para evaluar
+     * @return Capacidad disponible
+     */
+
 }
