@@ -28,7 +28,7 @@ public class MainPruebaAlmacenes {
         // 5. Mostrar configuración inicial
         System.out.println("=== CONFIGURACIÓN INICIAL ===");
         for (Aeropuerto a : aeropuertos) {
-            System.out.println(a.getCodigo() + " - Capacidad almacén: " + a.getCapacidad());
+            System.out.println(a.getCodigo() + " "+ a.getPais() + " - Capacidad almacén: " + a.getCapacidad());
         }
         System.out.println("\nPedidos: " + pedidos.size());
         System.out.println();
@@ -47,32 +47,44 @@ public class MainPruebaAlmacenes {
 
         System.out.println("\n=== RUTAS DETALLADAS ===");
         for (Ruta ruta : solucion.getRutas()) {
-            System.out.println(ruta);
+            System.out.print("Pedido " + ruta.getPedido().getIdCliente() +
+                    " (" + ruta.getCantidad() + " productos): ");
+            System.out.print(ruta.getSedeOrigen().getNombre() + " → ");
+
+            for (int i = 0; i < ruta.getVuelos().size(); i++) {
+                Vuelo v = ruta.getVuelos().get(i);
+                System.out.print(v.getAeropuertoDestino().getNombre());
+                if (i < ruta.getVuelos().size() - 1) {
+                    System.out.print(" → ");
+                }
+            }
+            System.out.println();
         }
 
-        // 9. Verificar estado de VUELOS
+        // 9. Verificar estado de VUELOS (MODIFICADO)
         System.out.println("\n=== ESTADO DE VUELOS ===");
         for (Vuelo vuelo : vuelos) {
             if (vuelo.getCapacidadActual() > 0) {
-                System.out.println(vuelo.getAeropuertoOrigen().getCodigo() + "→" +
-                        vuelo.getAeropuertoDestino().getCodigo() +
-                        ": " + vuelo.getCapacidadActual() + "/" +
+                System.out.println(vuelo.getAeropuertoOrigen().getNombre() + " → " +
+                        vuelo.getAeropuertoDestino().getNombre() +
+                        " (salida: " + vuelo.getHoraSalida().toLocalTime() + "): " +
+                        vuelo.getCapacidadActual() + "/" +
                         vuelo.getCapacidadMaxima());
             }
         }
 
-        // 10. Verificar estado de ALMACENES
+        // 10. Verificar estado de ALMACENES (YA USA NOMBRES, sin cambios)
         System.out.println("\n=== ESTADO DE ALMACENES ===");
         for (Aeropuerto aeropuerto : aeropuertos) {
             if (aeropuerto.getCapacidadActual() > 0 || !aeropuerto.getProductosActuales().isEmpty()) {
-                System.out.println("\n" + aeropuerto.getCodigo() + " (" + aeropuerto.getNombre() + "):");
+                System.out.println("\n" + aeropuerto.getNombre() + ":");
                 System.out.println("  Capacidad: " + aeropuerto.getCapacidadActual() + "/" +
                         aeropuerto.getCapacidad());
                 System.out.println("  Productos en almacén: " + aeropuerto.getProductosActuales().size());
 
                 for (ProductoEnAlmacen producto : aeropuerto.getProductosActuales()) {
                     System.out.println("    - " + producto.getCantidad() + " productos, " +
-                            "llegada: " + producto.getHoraLlegada() + ", " +
+                            "llegada: " + producto.getHoraLlegada().toLocalTime() + ", " +
                             "tipo: " + (producto.esDestinoFinal() ? "DESTINO FINAL" : "TRÁNSITO"));
                 }
             }
