@@ -8,6 +8,16 @@ public class Pedido {
     private int minuto;                // Minuto de registro
     private String aeropuertoDestino;  // Código del aeropuerto destino (ej: "SKBO")
     private int cantidad;              // Cantidad de productos (1-999)
+
+    public int getCantidadCumplida() {
+        return cantidadCumplida;
+    }
+
+    public void setCantidadCumplida(int cantidadCumplida) {
+        this.cantidadCumplida = cantidadCumplida;
+    }
+
+    private int cantidadCumplida;      //cantidad asignada del pedido
     private String idCliente;          // Identificador del cliente
 
     // === Constructores ===
@@ -20,6 +30,7 @@ public class Pedido {
         this.minuto = minuto;
         this.aeropuertoDestino = aeropuertoDestino;
         this.cantidad = cantidad;
+        this.cantidadCumplida = 0;
         this.idCliente = idCliente;
     }
 

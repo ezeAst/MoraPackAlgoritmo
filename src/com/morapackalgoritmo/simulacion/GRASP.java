@@ -162,12 +162,12 @@ public class GRASP {
                       .append(ruta.getCantidad())
                       .append(" paquetes. Ruta: ");
                     for (Vuelo vuelo : ruta.getVuelos()) {
-                        sb.append(vuelo.getAeropuertoOrigen().getCodigo())
+                        sb.append(vuelo.getAeropuertoOrigen().getPais())
                           .append(" -> ");
                     }
                     // Aeropuerto final
                     if (!ruta.getVuelos().isEmpty()) {
-                        sb.append(ruta.getVuelos().get(ruta.getVuelos().size()-1).getAeropuertoDestino().getCodigo());
+                        sb.append(ruta.getVuelos().get(ruta.getVuelos().size()-1).getAeropuertoDestino().getPais());
                     }
                     System.out.println(sb.toString());
                 }
@@ -177,6 +177,7 @@ public class GRASP {
                 for (Ruta ruta : rutasDelPedido) {
                     asignadosAhora += ruta.getCantidad();
                 }
+                pedido.setCantidadCumplida(pedido.getCantidadCumplida() + asignadosAhora);
                 cantidadRestante -= asignadosAhora;
             }
 
@@ -323,6 +324,18 @@ public class GRASP {
                     continue; // Vuelo lleno, skip
                 }
 
+                // ===== NUEVA VALIDACIÓN: CAPACIDAD DE ALMACÉN =====
+                Aeropuerto aeropuertoLlegada = vuelo.getAeropuertoDestino();
+                LocalDateTime horaLlegada = vuelo.getHoraLlegada();
+
+                int capacidadDisponible = aeropuertoLlegada.getCapacidad() -
+                        aeropuertoLlegada.calcularOcupacionEnMomento(horaLlegada);
+
+                if (capacidadDisponible <= 0) {
+                    continue; // Almacén lleno, skip este vuelo
+                }
+                // ===== FIN VALIDACIÓN =====
+
                 // Calcular tiempo de este vuelo
                 long duracionVuelo = calcularDuracionHoras(
                         vuelo.getHoraSalida(),
@@ -433,7 +446,7 @@ public class GRASP {
      */
     private List<Ruta> asignarProductosConRCL(Pedido pedido, List<OpcionSede> rcl) {
         List<Ruta> rutasCreadas = new ArrayList<>();
-        int cantidadPendiente = pedido.getCantidad();
+        int cantidadPendiente = pedido.getCantidad() - pedido.getCantidadCumplida();
 
         // Copiar RCL para poder remover opciones ya usadas
         List<OpcionSede> rclDisponible = new ArrayList<>(rcl);
@@ -547,12 +560,9 @@ public class GRASP {
             Aeropuerto aeropuertoLlegada = vuelo.getAeropuertoDestino();
             LocalDateTime horaLlegada = vuelo.getHoraLlegada();
 
-            // Limpiar productos expirados antes de validar
-            aeropuertoLlegada.limpiarProductosExpirados(horaLlegada);
-
             // Calcular capacidad disponible
             int capacidadDisponible = aeropuertoLlegada.getCapacidad() -
-                    aeropuertoLlegada.getCapacidadActual();
+                    aeropuertoLlegada.calcularOcupacionEnMomento(horaLlegada);
 
             capacidadMinima = Math.min(capacidadMinima, capacidadDisponible);
 

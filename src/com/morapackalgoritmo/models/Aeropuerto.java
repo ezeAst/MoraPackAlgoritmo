@@ -132,54 +132,18 @@ public class Aeropuerto {
     }
 
     /**
-     * Limpia productos expirados del almacén
-     * @param momentoReferencia Momento actual para evaluar expiración
-     */
-    public void limpiarProductosExpirados(LocalDateTime momentoReferencia) {
-        Iterator<ProductoEnAlmacen> iterator = productosActuales.iterator();
-
-        while (iterator.hasNext()) {
-            ProductoEnAlmacen producto = iterator.next();
-            boolean debeEliminar = false;
-
-            if (producto.esDestinoFinal()) {
-                // Almacén de destino: eliminar si pasaron más de 2 horas
-                Duration tiempoEnAlmacen = Duration.between(producto.getHoraLlegada(), momentoReferencia);
-                if (tiempoEnAlmacen.toHours() >= 2) {
-                    debeEliminar = true;
-                }
-            } else {
-                // Almacén de tránsito: eliminar si el siguiente vuelo ya salió
-                if (producto.getSiguienteVuelo().getHoraSalida().isBefore(momentoReferencia)) {
-                    debeEliminar = true;
-                }
-            }
-
-            if (debeEliminar) {
-                capacidadActual -= producto.getCantidad();
-                iterator.remove();
-            }
-        }
-    }
-
-    /**
      * Intenta agregar productos al almacén
      * @param producto Producto a agregar
      * @param momentoReferencia Momento de llegada
      * @return true si se pudo agregar, false si no hay espacio
      */
-    public boolean agregarProductoAlAlmacen(ProductoEnAlmacen producto, LocalDateTime momentoReferencia) {
-        // Primero limpiar productos expirados
-        limpiarProductosExpirados(momentoReferencia);
-
-        // Verificar si hay espacio
-        if (capacidadActual + producto.getCantidad() <= capacidad) {
-            productosActuales.add(producto);
-            capacidadActual += producto.getCantidad();
+    public boolean agregarProductoAlAlmacen(ProductoEnAlmacen producto, LocalDateTime momento) {
+        // Validar si hay espacio en ese momento
+        if (hayEspacioEnMomento(producto.getCantidad(), momento)) {
+            productosActuales.add(producto); // Solo agregar, nunca eliminar
             return true;
         }
-
-        return false; // No hay espacio
+        return false;
     }
 
     /**
@@ -187,5 +151,89 @@ public class Aeropuerto {
      * @param momentoReferencia Momento para evaluar
      * @return Capacidad disponible
      */
+
+    public int calcularOcupacionEnMomento(LocalDateTime momento) {
+        int ocupacion = 0;
+
+        for (ProductoEnAlmacen producto : productosActuales) {
+            boolean estaPresente = false;
+
+            if (producto.esDestinoFinal()) {
+                // Destino: está presente si no han pasado 2 horas Y ya llegó
+                Duration tiempo = Duration.between(producto.getHoraLlegada(), momento);
+                if (tiempo.toHours() >= 0 && tiempo.toHours() <= 2) {
+                    estaPresente = true;
+                }
+            } else {
+                // Tránsito: está presente si el siguiente vuelo NO ha salido Y ya llegó
+                LocalDateTime llegada = producto.getHoraLlegada();
+                LocalDateTime salida = producto.getSiguienteVuelo().getHoraSalida();
+
+                if ((momento.isAfter(llegada) || momento.isEqual(llegada)) &&
+                        (momento.isBefore(salida) || momento.isEqual(salida))) {
+                    estaPresente = true;
+                }
+            }
+
+            if (estaPresente) {
+                ocupacion += producto.getCantidad();
+            }
+        }
+
+        return ocupacion;
+    }
+
+    /**
+     * Verifica si hay espacio para agregar productos en un momento dado
+     */
+    public boolean hayEspacioEnMomento(int cantidadAAgregar, LocalDateTime momento) {
+        int ocupacionActual = calcularOcupacionEnMomento(momento);
+        return (ocupacionActual + cantidadAAgregar) <= capacidad;
+    }
+
+    public void imprimirEstadoEnMomento(LocalDateTime momento) {
+        int ocupacion = calcularOcupacionEnMomento(momento);
+        int disponible = capacidad - ocupacion;
+
+        System.out.println("\n📍 Estado de " + nombre + " (" + codigo + ") en " + momento);
+        System.out.println("   Capacidad: " + ocupacion + "/" + capacidad +
+                " (Disponible: " + disponible + ")");
+
+        // Listar productos presentes en ese momento
+        System.out.println("   Productos presentes:");
+
+        int count = 0;
+        for (ProductoEnAlmacen producto : productosActuales) {
+            boolean estaPresente = false;
+
+            if (producto.esDestinoFinal()) {
+                Duration tiempo = Duration.between(producto.getHoraLlegada(), momento);
+                // ❌ FALTA: tiempo.toHours() >= 0
+                if (tiempo.toHours() < 2 && !tiempo.isNegative()) { // isNegative() es equivalente pero menos claro
+                    estaPresente = true;
+                }
+            } else {
+                // ✅ CORRECTO: ya tiene ambas validaciones
+                if (!producto.getSiguienteVuelo().getHoraSalida().isBefore(momento) &&
+                        !producto.getHoraLlegada().isAfter(momento)) {
+                    estaPresente = true;
+                }
+            }
+
+            if (estaPresente) {
+                count++;
+                String tipo = producto.esDestinoFinal() ? "DESTINO" : "TRÁNSITO";
+                System.out.println("      " + count + ". " + producto.getCantidad() + " productos - " +
+                        "Llegada: " + producto.getHoraLlegada().toLocalTime() +
+                        " - Tipo: " + tipo +
+                        " - Pedido: " + producto.getRuta().getPedido().getIdCliente());
+            }
+        }
+
+        if (count == 0) {
+            System.out.println("      (vacío)");
+        }
+    }
+
 
 }

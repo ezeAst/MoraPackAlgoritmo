@@ -75,20 +75,11 @@ public class MainPruebaAlmacenes {
 
         // 10. Verificar estado de ALMACENES (YA USA NOMBRES, sin cambios)
         System.out.println("\n=== ESTADO DE ALMACENES ===");
-        for (Aeropuerto aeropuerto : aeropuertos) {
-            if (aeropuerto.getCapacidadActual() > 0 || !aeropuerto.getProductosActuales().isEmpty()) {
-                System.out.println("\n" + aeropuerto.getNombre() + ":");
-                System.out.println("  Capacidad: " + aeropuerto.getCapacidadActual() + "/" +
-                        aeropuerto.getCapacidad());
-                System.out.println("  Productos en almacén: " + aeropuerto.getProductosActuales().size());
 
-                for (ProductoEnAlmacen producto : aeropuerto.getProductosActuales()) {
-                    System.out.println("    - " + producto.getCantidad() + " productos, " +
-                            "llegada: " + producto.getHoraLlegada().toLocalTime() + ", " +
-                            "tipo: " + (producto.esDestinoFinal() ? "DESTINO FINAL" : "TRÁNSITO"));
-                }
-            }
+        for (Aeropuerto a : aeropuertos) {
+            a.imprimirEstadoEnMomento(LocalDateTime.of(2025, 1, 1, 0, 0));
         }
+
     }
 
     // === Métodos auxiliares ===
@@ -136,7 +127,7 @@ public class MainPruebaAlmacenes {
                 100));
 
         // Vuelo adicional posterior para probar limpieza de productos
-        vuelos.add(new Vuelo(lima, bogota,
+        vuelos.add(new Vuelo(lima, buenosAires,
                 LocalDateTime.of(2025, 1, 1, 16, 0),  // Vuelo más tarde
                 LocalDateTime.of(2025, 1, 1, 19, 0),
                 100));
@@ -157,7 +148,7 @@ public class MainPruebaAlmacenes {
 
         // Pedido 3: 40 productos a Buenos Aires (más tarde, Bogotá ya debería estar libre)
         // Este pedido llega cuando el vuelo de conexión ya salió (productos limpiados)
-        pedidos.add(new Pedido(1, 15, 0, "SAEZ", 40, "0003333"));
+        pedidos.add(new Pedido(1, 15, 0, "SAEZ", 33, "0003333"));
 
         return pedidos;
     }
