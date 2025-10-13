@@ -155,6 +155,21 @@ public class GRASP {
                 // Agregar rutas a la solución
                 for (Ruta ruta : rutasDelPedido) {
                     solucion.agregarRuta(ruta);
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("INFO: Se le agregó la ruta al pedido ")
+                      .append(pedido.getIdCliente())
+                      .append(" con ")
+                      .append(ruta.getCantidad())
+                      .append(" paquetes. Ruta: ");
+                    for (Vuelo vuelo : ruta.getVuelos()) {
+                        sb.append(vuelo.getAeropuertoOrigen().getCodigo())
+                          .append(" -> ");
+                    }
+                    // Aeropuerto final
+                    if (!ruta.getVuelos().isEmpty()) {
+                        sb.append(ruta.getVuelos().get(ruta.getVuelos().size()-1).getAeropuertoDestino().getCodigo());
+                    }
+                    System.out.println(sb.toString());
                 }
 
                 // Actualizar cantidad restante
