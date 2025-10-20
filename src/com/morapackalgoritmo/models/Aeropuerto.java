@@ -131,12 +131,7 @@ public class Aeropuerto {
                 '}';
     }
 
-    /**
-     * Intenta agregar productos al almacén
-     * @param producto Producto a agregar
-     * @param momentoReferencia Momento de llegada
-     * @return true si se pudo agregar, false si no hay espacio
-     */
+
     public boolean agregarProductoAlAlmacen(ProductoEnAlmacen producto, LocalDateTime momento) {
         // Validar si hay espacio DURANTE TODO EL PERIODO de estancia
         if (hayEspacioEnPeriodo(producto.getCantidad(), producto.getHoraLlegada(), producto.getSiguienteVuelo())) {
@@ -146,11 +141,7 @@ public class Aeropuerto {
         return false;
     }
 
-    /**
-     * Calcula la capacidad disponible actual (después de limpiar expirados)
-     * @param momentoReferencia Momento para evaluar
-     * @return Capacidad disponible
-     */
+
 
     public int calcularOcupacionEnMomento(LocalDateTime momento) {
         int ocupacion = 0;
