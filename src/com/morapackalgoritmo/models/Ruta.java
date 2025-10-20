@@ -10,6 +10,15 @@ public class Ruta {
     private Aeropuerto sedeOrigen;         // Aeropuerto o sede de origen (Lima, Bruselas, Bakú, etc.)
     private List<Vuelo> vuelos;            // Secuencia ordenada de vuelos
     private int cantidad;                  // Cantidad de productos que siguen esta ruta
+    private boolean cumplePlazo;
+
+    public boolean isCumplePlazo() {
+        return cumplePlazo;
+    }
+
+    public void setCumplePlazo(boolean cumplePlazo) {
+        this.cumplePlazo = cumplePlazo;
+    }
 
     // === Constructores ===
     public Ruta() {

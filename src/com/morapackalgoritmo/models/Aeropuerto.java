@@ -138,9 +138,9 @@ public class Aeropuerto {
      * @return true si se pudo agregar, false si no hay espacio
      */
     public boolean agregarProductoAlAlmacen(ProductoEnAlmacen producto, LocalDateTime momento) {
-        // Validar si hay espacio en ese momento
-        if (hayEspacioEnMomento(producto.getCantidad(), momento)) {
-            productosActuales.add(producto); // Solo agregar, nunca eliminar
+        // Validar si hay espacio DURANTE TODO EL PERIODO de estancia
+        if (hayEspacioEnPeriodo(producto.getCantidad(), producto.getHoraLlegada(), producto.getSiguienteVuelo())) {
+            productosActuales.add(producto);
             return true;
         }
         return false;
@@ -161,7 +161,7 @@ public class Aeropuerto {
             if (producto.esDestinoFinal()) {
                 // Destino: está presente si no han pasado 2 horas Y ya llegó
                 Duration tiempo = Duration.between(producto.getHoraLlegada(), momento);
-                if (tiempo.toHours() >= 0 && tiempo.toHours() <= 2) {
+                if (!tiempo.isNegative() && tiempo.compareTo(Duration.ofHours(2)) < 0) {
                     estaPresente = true;
                 }
             } else {
@@ -233,6 +233,42 @@ public class Aeropuerto {
         if (count == 0) {
             System.out.println("      (vacío)");
         }
+    }
+
+    /**
+     * Verifica si hay espacio disponible durante TODO el periodo de estancia del producto
+     * @param cantidadAAgregar Cantidad a agregar
+     * @param horaLlegada Cuándo llega el producto
+     * @param siguienteVuelo Vuelo de conexión (null si es destino final)
+     * @return true si hay espacio durante todo el periodo
+     */
+    public boolean hayEspacioEnPeriodo(int cantidadAAgregar, LocalDateTime horaLlegada, Vuelo siguienteVuelo) {
+        LocalDateTime inicioEstancia = horaLlegada;
+        LocalDateTime finEstancia;
+
+        if (siguienteVuelo == null) {
+            // Destino final: estará 2 horas
+            finEstancia = horaLlegada.plusHours(2);
+        } else {
+            // Tránsito: estará hasta que salga el siguiente vuelo
+            finEstancia = siguienteVuelo.getHoraSalida();
+        }
+
+        // Verificar capacidad en múltiples puntos del periodo
+        // Verificamos cada hora dentro del periodo (granularidad de 1 hora)
+        LocalDateTime momento = inicioEstancia;
+
+        while (momento.isBefore(finEstancia) || momento.isEqual(finEstancia)) {
+            int ocupacionEnMomento = calcularOcupacionEnMomento(momento);
+
+            if (ocupacionEnMomento + cantidadAAgregar > capacidad) {
+                return false; // No hay espacio en este momento del periodo
+            }
+
+            momento = momento.plusHours(1); // Avanzar 1 hora
+        }
+
+        return true; // Hay espacio durante todo el periodo
     }
 
 

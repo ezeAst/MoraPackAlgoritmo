@@ -77,7 +77,7 @@ public class MainPruebaAlmacenes {
         System.out.println("\n=== ESTADO DE ALMACENES ===");
 
         for (Aeropuerto a : aeropuertos) {
-            a.imprimirEstadoEnMomento(LocalDateTime.of(2025, 1, 1, 0, 0));
+            a.imprimirEstadoEnMomento(LocalDateTime.of(2025, 1, 1, 20, 1));
         }
 
     }
@@ -88,7 +88,7 @@ public class MainPruebaAlmacenes {
         List<Aeropuerto> aeropuertos = new ArrayList<>();
 
         // América - CAPACIDADES LIMITADAS para forzar validación
-        aeropuertos.add(new Aeropuerto("SPJC", "Lima", "Peru", 100, -5, "America")); // Capacidad baja
+        aeropuertos.add(new Aeropuerto("SPJC", "Lima", "Peru", 0, -5, "America")); // Capacidad baja
         aeropuertos.add(new Aeropuerto("SKBO", "Bogota", "Colombia", 80, -5, "America")); // Capacidad baja
         aeropuertos.add(new Aeropuerto("SAEZ", "BuenosAires", "Argentina", 120, -3, "America")); // Destino
         aeropuertos.add(new Aeropuerto("SCEL", "Santiago", "Chile", 90, -4, "America"));
@@ -126,7 +126,7 @@ public class MainPruebaAlmacenes {
                 LocalDateTime.of(2025, 1, 1, 18, 0),
                 100));
 
-        // Vuelo adicional posterior para probar limpieza de productos
+         //Vuelo adicional posterior para probar limpieza de productos
         vuelos.add(new Vuelo(lima, buenosAires,
                 LocalDateTime.of(2025, 1, 1, 16, 0),  // Vuelo más tarde
                 LocalDateTime.of(2025, 1, 1, 19, 0),

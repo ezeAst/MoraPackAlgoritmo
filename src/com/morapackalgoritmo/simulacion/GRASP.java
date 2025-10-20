@@ -189,6 +189,8 @@ public class GRASP {
             }
         }
 
+        solucion.evaluarSolucion(pedidos, vuelos, aeropuertos);
+
         return solucion;
     }
 
@@ -493,6 +495,14 @@ public class GRASP {
             for (Vuelo vuelo : opcion.ruta) {
                 vuelo.cargarProductos(cantidadAsignada);
             }
+
+            LocalDateTime fechaPedido = LocalDateTime.of(2025, 1, pedido.getDia(),
+                    pedido.getHora(), pedido.getMinuto());
+            boolean cumple = cumplePlazo(opcion.ruta, fechaPedido,
+                    buscarAeropuertoPorCodigo(pedido.getAeropuertoDestino()),
+                    determinarPlazo(opcion.sede,
+                            buscarAeropuertoPorCodigo(pedido.getAeropuertoDestino())));
+            nuevaRuta.setCumplePlazo(cumple);
 
             // Actualizar ALMACENES
             actualizarAlmacenesEnRuta(nuevaRuta, opcion.ruta, cantidadAsignada);
